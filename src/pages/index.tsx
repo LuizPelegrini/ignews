@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 
 import styles from '@/styles/pages/home.module.scss';
+import { SubscribeButton } from '@/components/SubscribeButton';
 
 export default function Home() {
   return (
@@ -17,6 +18,7 @@ export default function Home() {
             Get access to all publications <br />
             <span>for $9.90/month</span>
           </p>
+          <SubscribeButton />
         </section>
         <Image
           src="/images/avatar.svg"
