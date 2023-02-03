@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 import styles from '@/styles/pages/home.module.scss';
 import { SubscribeButton } from '@/components/SubscribeButton';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import { stripe } from '@/lib/stripe';
 
 interface HomeProps {
@@ -41,7 +41,7 @@ export default function Home({ price }: HomeProps) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   const { id, unit_amount } = await stripe.prices.retrieve('price_1MXPlrGVTREReh8IOHxUjjxt');
 
   const price = {
@@ -55,6 +55,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return {
     props: {
       price
-    }
+    },
+    revalidate: 60 * 60 * 24 // 24 hours
   }
 };
