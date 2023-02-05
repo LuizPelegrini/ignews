@@ -1,8 +1,21 @@
 import Stripe from 'stripe';
-import { stripe } from '@/lib/stripe';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
+import { query as q} from 'faunadb';
+
+import { stripe } from '@/lib/stripe';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { faunaClient } from '@/lib/faunadb';
+
+type User = {
+  ref: {
+    id: string;
+  },
+  data: {
+    email: string;
+    stripe_customer_id: string;
+  }
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if(req.method !== 'POST') {
@@ -24,13 +37,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  // create stripe customer
-  let stripeCustomer: Stripe.Response<Stripe.Customer>;
+  const userEmail = session.user.email!;
+  const user = await faunaClient.query<User>(
+    q.Get(
+      q.Match(
+        q.Index('user_by_email'),
+        q.Casefold(userEmail)
+      )
+    )
+  );
+  
+  let stripeCustomerId: string;
   try {
-    stripeCustomer = await stripe.customers.create({
-      email: session.user.email!,
-      // metadata
-    });
+    // create new strapi customer and save in FaunaDB for future checkouts from same user
+    if(!user || !user.data.stripe_customer_id){
+      const stripeCustomer = await stripe.customers.create({
+        email: userEmail,
+        // metadata
+      });
+      
+      stripeCustomerId = stripeCustomer.id;
+
+      await faunaClient.query(
+        q.Update(
+          q.Ref(q.Collection('users'), user.ref.id), { 
+            data: {
+              stripe_customer_id: stripeCustomerId
+            }
+          }
+        )
+      );
+    } else {
+      stripeCustomerId = user.data.stripe_customer_id;
+    }
   
   } catch (error: any) {
     console.log(`ERROR on creating Strapi customer::${error.message}`);
@@ -49,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         price: priceId,
         quantity: 1
       }],
-      customer: stripeCustomer.id,
+      customer: stripeCustomerId,
       success_url: `${process.env.BASE_URL}/posts`,
       cancel_url: process.env.BASE_URL
     });
