@@ -22,13 +22,13 @@ export default NextAuth({
             q.Exists(
               q.Match(
                 q.Index('user_by_email'),
-                user.email!
+                q.Casefold(user.email!)
               )
             ),
             q.Get(
               q.Match(
                 q.Index('user_by_email'),
-                user.email!
+                q.Casefold(user.email!)
               )
             ),
             q.Create(
