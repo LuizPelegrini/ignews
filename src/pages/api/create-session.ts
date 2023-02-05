@@ -1,12 +1,8 @@
+import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
-import Stripe from 'stripe';
-
-const BASE_URL = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}` 
-  : process.env.LOCAL_BASE_URL || 'http://localhost:3000';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if(req.method !== 'POST') {
@@ -54,8 +50,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         quantity: 1
       }],
       customer: stripeCustomer.id,
-      success_url: `${BASE_URL}/posts`,
-      cancel_url: BASE_URL
+      success_url: `${process.env.BASE_URL}/posts`,
+      cancel_url: process.env.BASE_URL
     });
   
     res.status(200).json({ sessionUrl: stripeSession.url });
